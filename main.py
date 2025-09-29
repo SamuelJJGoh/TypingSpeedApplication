@@ -1,6 +1,10 @@
 from tkinter import *
 from tkinter import ttk
+from tkinter import font as tkfont
 from wordbank import words_list
+
+# a set is used to prevent duplicates
+matched = set()  # indices of words_list that have been correctly typed
 
 def focus_in(event):
     if entry.get() == placeholder:
@@ -16,8 +20,19 @@ def clear_focus_on_click(event):
     if event.widget is not entry:
         window.focus_set() 
 
-def on_canvas_resize(event):
-    word_canvas.itemconfig(text_id, width=max(event.width - 20, 1))
+def check_word(event=None):
+    typed = entry.get().strip()
+    if not typed or typed == placeholder:
+        return
+    for i, w in enumerate(words_list):
+        if i in matched:
+            continue # we don't want duplicates
+        if typed.lower() == w:  
+            matched.add(i)
+            word_canvas.itemconfig(f"word-{i}", fill="green")
+            break
+    entry.delete(0, "end")
+
 
 def restart():
     pass
@@ -43,14 +58,37 @@ word_canvas = Canvas(window, width=150, height=300, highlightthickness=0)
 word_canvas.grid(row=2, column=0, columnspan=3, padx=5, pady=5, sticky="nsew")
 
 
-text_id = word_canvas.create_text(
-    10, 10,
-    text=" ".join(words_list),
-    anchor="nw",
-    width=1,                    # temporary; we’ll set it after we know the size
-    font=("Helvetica", 20),
-    justify="left"
-)
+# Creates a reusable Font object 
+txt_font = tkfont.Font(family="Helvetica", size=20)
+
+def redraw(event=None):
+    """Draw all words, wrapping to next line as needed. Preserve colors for matched words."""
+    margin = 10
+    x = margin
+    y = margin
+
+    space_w = txt_font.measure(" ") # spacing between words
+    line_h = txt_font.metrics("linespace") + 6
+    max_w = max(word_canvas.winfo_width() - margin, 1)
+
+    for i, w in enumerate(words_list):
+        w_w = txt_font.measure(w) # the pixel width of the word w 
+        # wrap to next line if this word would exceed the right edge
+        if x + w_w > max_w:
+            x = margin
+            y += line_h
+
+        color = "green" if i in matched else "black"
+        word_canvas.create_text(
+            x, y,
+            text=w,
+            font=txt_font,
+            anchor="nw",
+            fill=color,
+            tags=(f"word-{i}", "word")
+        )
+        x += w_w + space_w
+
 
 placeholder = "Type the words here"
 word_var = StringVar(value=placeholder)
@@ -62,7 +100,9 @@ entry.focus_set() # put cursor in box immediately
 
 window.bind_all("<Button>", clear_focus_on_click)
 
-word_canvas.bind("<Configure>", on_canvas_resize)
+word_canvas.bind("<Configure>", redraw)
 
+entry.bind("<Return>", check_word)
+entry.bind("<space>", check_word)
 
 window.mainloop()
