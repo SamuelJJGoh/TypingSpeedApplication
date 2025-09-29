@@ -4,15 +4,17 @@ from tkinter import font as tkfont
 from wordbank import words_list
 
 # TO:DO
-# 1. Only allows user to enter the word in the order given
 # 2. Set a countdown and only allows user to enter word when the time is running
 # 3. Counts number of words correct in that time
 # 4. Messagebox to show the WPM
 # 5. Restart button
 
  
+GAME_OVER = False
+
 # a set is used to prevent duplicates
 matched = set()  # indices of words_list that have been correctly typed
+current_index = 0
 
 def focus_in(event):
     if entry.get() == placeholder:
@@ -27,27 +29,27 @@ def focus_out(event):
 def clear_focus_on_click(event):
     if event.widget is not entry:
         window.focus_set() 
-
+    
 def check_word(event=None):
+    global current_index
+
     typed = entry.get().strip()
     if not typed or typed == placeholder:
         return
-    for i, w in enumerate(words_list):
-        if i in matched:
-            continue # we don't want duplicates
-        if i == 0:
-            if typed.lower() == w:  
-                matched.add(i)
-                word_canvas.itemconfig(f"word-{i}", fill="green")
-                break
-        if i-1 in matched:
-            if typed.lower() == w:  
-                matched.add(i)
-                word_canvas.itemconfig(f"word-{i}", fill="green")
-                break
+    
+    target = words_list[current_index]
+    if typed.lower() == target.lower():
+        matched.add(current_index)
+        word_canvas.itemconfig(f"word-{current_index}", fill="green")
+
+        current_index += 1
+        if current_index < len(words_list):
+            word_canvas.itemconfig(f"word-{current_index}", fill="blue")
+        else : # finished all words in word list
+            pass
+
     entry.delete(0, "end")
-
-
+ 
 def restart():
     pass
 
@@ -71,12 +73,10 @@ sep.grid(row=1, column=0, columnspan=3, sticky="ew", padx=5, pady=5)
 word_canvas = Canvas(window, width=150, height=300, highlightthickness=0)
 word_canvas.grid(row=2, column=0, columnspan=3, padx=5, pady=5, sticky="nsew")
 
-
 # Creates a reusable Font object 
 txt_font = tkfont.Font(family="Helvetica", size=20)
 
 def redraw(event=None):
-    """Draw all words, wrapping to next line as needed. Preserve colors for matched words."""
     margin = 10
     x = margin
     y = margin
@@ -91,15 +91,21 @@ def redraw(event=None):
         if x + w_w > max_w:
             x = margin
             y += line_h
+        
+        if i in matched:
+            color = "green"
+        elif i == current_index:
+            color = "blue"
+        else:
+            color = "black"
 
-        color = "green" if i in matched else "black"
         word_canvas.create_text(
             x, y,
             text=w,
             font=txt_font,
             anchor="nw",
             fill=color,
-            tags=(f"word-{i}", "word")
+            tags=(f"word-{i}", "word"),
         )
         x += w_w + space_w
 
@@ -115,6 +121,7 @@ entry.focus_set() # put cursor in box immediately
 window.bind_all("<Button>", clear_focus_on_click)
 
 word_canvas.bind("<Configure>", redraw)
+
 
 entry.bind("<Return>", check_word)
 entry.bind("<space>", check_word)
