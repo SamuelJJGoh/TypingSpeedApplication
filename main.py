@@ -3,6 +3,14 @@ from tkinter import ttk
 from tkinter import font as tkfont
 from wordbank import words_list
 
+# TO:DO
+# 1. Only allows user to enter the word in the order given
+# 2. Set a countdown and only allows user to enter word when the time is running
+# 3. Counts number of words correct in that time
+# 4. Messagebox to show the WPM
+# 5. Restart button
+
+ 
 # a set is used to prevent duplicates
 matched = set()  # indices of words_list that have been correctly typed
 
@@ -27,10 +35,16 @@ def check_word(event=None):
     for i, w in enumerate(words_list):
         if i in matched:
             continue # we don't want duplicates
-        if typed.lower() == w:  
-            matched.add(i)
-            word_canvas.itemconfig(f"word-{i}", fill="green")
-            break
+        if i == 0:
+            if typed.lower() == w:  
+                matched.add(i)
+                word_canvas.itemconfig(f"word-{i}", fill="green")
+                break
+        if i-1 in matched:
+            if typed.lower() == w:  
+                matched.add(i)
+                word_canvas.itemconfig(f"word-{i}", fill="green")
+                break
     entry.delete(0, "end")
 
 
