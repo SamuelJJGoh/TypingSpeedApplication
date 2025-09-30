@@ -4,18 +4,17 @@ from tkinter import font as tkfont
 from wordbank import words_list
 
 # TO:DO
-# 2. Set a countdown and only allows user to enter word when the time is running
 # 3. Counts number of words correct in that time
 # 4. Messagebox to show the WPM
 # 5. Restart button
 
- 
-GAME_OVER = False
+current_index = 0
 timer_started = False
+COUNTDOWN = 60
+remaining_time = COUNTDOWN
 
 # a set is used to prevent duplicates
 matched = set()  # indices of words_list that have been correctly typed
-current_index = 0
 
 def focus_in(event):
     if entry.get() == placeholder:
@@ -46,26 +45,41 @@ def check_word(event=None):
         current_index += 1
         if current_index < len(words_list):
             word_canvas.itemconfig(f"word-{current_index}", fill="blue")
-        else : # finished all words in word list
-            pass
+        wpm_var.set(f"WPM: {calculate_wpm()}")       
 
     entry.delete(0, "end")
  
-def countdown(count):
-    time_var.set(f"Time left: {count}")
+def countdown():
+    global remaining_time
 
-    if count > 0:
-        window.after(1000, countdown, count-1)
-        timer_started
+    time_var.set(f"Time left: {remaining_time}")
+
+    if remaining_time > 0:
+        remaining_time -= 1      
+        window.after(1000, countdown)
+    else:
+        wpm_var.set(f"WPM: {calculate_wpm()}")       
+        entry.config(state="disabled")    
 
 def start_countdown_on_key_press(event):
-    global timer_started
+    global timer_started, remaining_time
     
     if timer_started:
         return
     else :
         timer_started = True
-        countdown(60)
+        remaining_time = COUNTDOWN
+        countdown()
+        wpm_var.set(f"WPM: {calculate_wpm()}")
+
+def calculate_wpm():
+    time_elapsed = COUNTDOWN - remaining_time
+    time_in_mins = time_elapsed / 60
+
+    total_chars = sum(len(words_list[i]) for i in matched)
+    wpm = (total_chars / 5) / time_in_mins
+
+    return int(wpm)    
 
 def restart():
     pass
@@ -77,7 +91,7 @@ wpm_var = StringVar(value="WPM: 0")
 wpm = Label(window, textvariable=wpm_var, font=("Courier", 20))
 wpm.grid(row=0, column=0, padx=6, pady=6)
 
-time_var = StringVar(value="Time left: 60")
+time_var = StringVar(value=f"Time left: {remaining_time}")
 time = Label(window, textvariable=time_var, font=("Courier", 20))
 time.grid(row=0, column=1)
 
