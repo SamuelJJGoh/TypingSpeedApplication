@@ -1,10 +1,8 @@
 from tkinter import *
 from tkinter import ttk
 from tkinter import font as tkfont
-from wordbank import words_list
-
-# TO:DO
-# 6. Separate wordbank to show random word list each time it restarts
+from wordbank import words_list_1, words_list_2, words_list_3, words_list_4, words_list_5
+import random
 
 current_index = 0
 timer_started = False
@@ -17,6 +15,22 @@ matched = set()  # indices of words_list that have been correctly typed
 all_correct_words_typed = []
 all_words_typed = [] # all the words that have been typed, regardless of if it's correct or not
 last_attempt = {}  # current_index : last wrong attempt
+
+last_list_idx = None
+
+all_words_list = [words_list_1, words_list_2, words_list_3, words_list_4, words_list_5]
+
+def pick_new_words_list(avoid_idx=None):
+    indices = list(range(len(all_words_list)))
+    if avoid_idx is not None and avoid_idx in indices and len(indices) > 1:
+        indices.remove(avoid_idx)
+    idx = random.choice(indices)
+    base = all_words_list[idx]
+    wl = base[:]
+    random.shuffle(wl)
+    return idx, wl
+
+last_list_idx, words_list = pick_new_words_list(avoid_idx=None)
 
 def focus_in(event):
     if entry.get() == placeholder:
@@ -109,7 +123,9 @@ def calculate_wpm():
     return int(wpm)    
 
 def restart():
-    global current_index, timer_started, timer_after, remaining_time, matched, all_correct_words_typed, all_words_typed, last_attempt
+    global current_index, timer_started, timer_after, remaining_time
+    global matched, all_correct_words_typed, all_words_typed, last_attempt
+    global last_list_idx, words_list
 
     if timer_after is not None:
         window.after_cancel(timer_after)
@@ -122,6 +138,8 @@ def restart():
     all_correct_words_typed = []
     all_words_typed = [] 
     last_attempt = {} 
+
+    last_list_idx, words_list = pick_new_words_list(avoid_idx=last_list_idx)
 
     wpm_var.set(value="WPM: 0")
     time_var.set(value=f"Time left: {remaining_time}")
@@ -194,13 +212,11 @@ placeholder = "Type the words here"
 word_var = StringVar(value=placeholder)
 entry = Entry(window, textvariable=word_var, font=("Courier", 20), width=60, justify="center", fg="gray")
 entry.grid(row=3, column=0, columnspan=3, padx=5, pady=5)
+
 entry.bind("<FocusIn>", focus_in)
 entry.bind("<FocusOut>", focus_out)
-entry.focus_set() # put cursor in box immediately
 
 window.bind_all("<Button>", clear_focus_on_click)
-
-word_canvas.bind("<Configure>", redraw)
 
 entry.bind("<Return>", check_word)
 entry.bind("<space>", check_word)
@@ -208,5 +224,8 @@ entry.bind("<space>", check_word)
 window.bind("<Key>", start_countdown_on_key_press)
 
 entry.bind("<KeyRelease-BackSpace>", edit_word)
+
+entry.focus_set() # put cursor in box immediately
+word_canvas.bind("<Configure>", redraw)
 
 window.mainloop()
