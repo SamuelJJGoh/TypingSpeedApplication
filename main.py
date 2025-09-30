@@ -4,11 +4,11 @@ from tkinter import font as tkfont
 from wordbank import words_list
 
 # TO:DO
-# 4. Messagebox to show the WPM
-# 5. Restart button
+# 6. Separate wordbank to show random word list each time it restarts
 
 current_index = 0
 timer_started = False
+timer_after = None
 COUNTDOWN = 60
 remaining_time = COUNTDOWN
 
@@ -74,16 +74,17 @@ def edit_word(event):
         entry.icursor("end")
 
 def countdown():
-    global remaining_time
+    global remaining_time, timer_after
 
     time_var.set(f"Time left: {remaining_time}")
 
     if remaining_time > 0:
         remaining_time -= 1      
-        window.after(1000, countdown)
+        timer_after = window.after(1000, countdown)
     else:
         wpm_var.set(f"WPM: {calculate_wpm()}")       
-        entry.config(state="disabled")    
+        entry.config(state="disabled")   
+        timer_after = None 
 
 def start_countdown_on_key_press(event):
     global timer_started, remaining_time
@@ -101,14 +102,36 @@ def calculate_wpm():
     if time_elapsed <= 0:
         return 0
     time_in_mins = time_elapsed / 60
-    
+
     total_chars = sum(len(words_list[i]) for i in matched)
     wpm = (total_chars / 5) / time_in_mins
 
     return int(wpm)    
 
 def restart():
-    pass
+    global current_index, timer_started, timer_after, remaining_time, matched, all_correct_words_typed, all_words_typed, last_attempt
+
+    if timer_after is not None:
+        window.after_cancel(timer_after)
+        timer_after = None
+
+    current_index = 0
+    timer_started = False
+    remaining_time = COUNTDOWN
+    matched = set()  
+    all_correct_words_typed = []
+    all_words_typed = [] 
+    last_attempt = {} 
+
+    wpm_var.set(value="WPM: 0")
+    time_var.set(value=f"Time left: {remaining_time}")
+    entry.config(state="normal", fg="gray")
+    entry.delete(0, "end")
+    entry.insert(0, placeholder)
+    entry.focus_set() 
+
+    word_canvas.delete("all")
+    redraw()
 
 window = Tk()
 window.title("Typing Speed Application")
