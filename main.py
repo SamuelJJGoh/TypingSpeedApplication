@@ -11,6 +11,7 @@ from wordbank import words_list
 
  
 GAME_OVER = False
+timer_started = False
 
 # a set is used to prevent duplicates
 matched = set()  # indices of words_list that have been correctly typed
@@ -50,6 +51,22 @@ def check_word(event=None):
 
     entry.delete(0, "end")
  
+def countdown(count):
+    time_var.set(f"Time left: {count}")
+
+    if count > 0:
+        window.after(1000, countdown, count-1)
+        timer_started
+
+def start_countdown_on_key_press(event):
+    global timer_started
+    
+    if timer_started:
+        return
+    else :
+        timer_started = True
+        countdown(60)
+
 def restart():
     pass
 
@@ -122,8 +139,9 @@ window.bind_all("<Button>", clear_focus_on_click)
 
 word_canvas.bind("<Configure>", redraw)
 
-
 entry.bind("<Return>", check_word)
 entry.bind("<space>", check_word)
+
+window.bind("<Key>", start_countdown_on_key_press)
 
 window.mainloop()
