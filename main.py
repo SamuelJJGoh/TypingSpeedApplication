@@ -4,7 +4,6 @@ from tkinter import font as tkfont
 from wordbank import words_list
 
 # TO:DO
-# 3. Counts number of words correct in that time
 # 4. Messagebox to show the WPM
 # 5. Restart button
 
@@ -15,6 +14,9 @@ remaining_time = COUNTDOWN
 
 # a set is used to prevent duplicates
 matched = set()  # indices of words_list that have been correctly typed
+all_correct_words_typed = []
+all_words_typed = [] # all the words that have been typed, regardless of if it's correct or not
+last_attempt = {}  # current_index : last wrong attempt
 
 def focus_in(event):
     if entry.get() == placeholder:
@@ -37,18 +39,40 @@ def check_word(event=None):
     if not typed or typed == placeholder:
         return
     
+    all_words_typed.append(typed.lower())
+
     target = words_list[current_index]
     if typed.lower() == target.lower():
         matched.add(current_index)
+        all_correct_words_typed.append(typed.lower())
         word_canvas.itemconfig(f"word-{current_index}", fill="green")
 
         current_index += 1
         if current_index < len(words_list):
             word_canvas.itemconfig(f"word-{current_index}", fill="blue")
         wpm_var.set(f"WPM: {calculate_wpm()}")       
+    else :
+        last_attempt[current_index] = typed.lower()
+        word_canvas.itemconfig(f"word-{current_index}", fill="red")
+
+        current_index += 1
+        if current_index < len(words_list):
+            word_canvas.itemconfig(f"word-{current_index}", fill="blue")
+        wpm_var.set(f"WPM: {calculate_wpm()}")  
 
     entry.delete(0, "end")
- 
+    return "break"  
+
+def edit_word(event):
+    global current_index
+
+    if entry.get() == "" and current_index > 0 and current_index-1 in last_attempt:
+        word_canvas.itemconfig(f"word-{current_index}", fill="black")
+        current_index -= 1
+        word_canvas.itemconfig(f"word-{current_index}", fill="blue")
+        entry.insert(0, last_attempt[current_index])
+        entry.icursor("end")
+
 def countdown():
     global remaining_time
 
@@ -74,8 +98,10 @@ def start_countdown_on_key_press(event):
 
 def calculate_wpm():
     time_elapsed = COUNTDOWN - remaining_time
+    if time_elapsed <= 0:
+        return 0
     time_in_mins = time_elapsed / 60
-
+    
     total_chars = sum(len(words_list[i]) for i in matched)
     wpm = (total_chars / 5) / time_in_mins
 
@@ -157,5 +183,7 @@ entry.bind("<Return>", check_word)
 entry.bind("<space>", check_word)
 
 window.bind("<Key>", start_countdown_on_key_press)
+
+entry.bind("<KeyRelease-BackSpace>", edit_word)
 
 window.mainloop()
